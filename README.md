@@ -1,2 +1,2 @@
-# homebridge-knx-room
-Homebridge Plugin for Room Monitors
+# homebridge-knx-thermo
+Homebridge Plugin for KNX Thermostats
