@@ -11,7 +11,8 @@
         "default": "224.0.23.12",
         "minLength": 1,
         "placeholder": "224.0.23.12",
-        "description": "Host or IP address of the KNX router or interface."
+        "pattern": "^(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$",
+        "description": "IPv4 address of the KNX router or interface."
       },
       "port": {
         "title": "KNX Port",

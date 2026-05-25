@@ -1,16 +1,17 @@
 import type { AccessoryPlugin, Service } from 'homebridge';
 import { Datapoint } from 'knx';
 
-import { PLUGIN_DISPLAY_NAME, PLUGIN_NAME, PLUGIN_VERSION } from './settings.js';
+import { PLUGIN_DISPLAY_NAME, PLUGIN_VERSION } from './settings.js';
 import type { RoomDeviceConfig } from './config.js';
 import type { TemperatureHistory } from './history.js';
 import type { RoomPlatform } from './platform.js';
 
 type KnxValue = number | string | boolean | Date;
+const LEGACY_PLUGIN_NAME = 'homebridge-knx-room';
 
 export class RoomAccessory implements AccessoryPlugin {
-  private readonly uuidBase: string;
   private readonly name: string;
+  public readonly uuid_base: string;
   public readonly displayName: string;
 
   private readonly temperatureSensorService: Service;
@@ -27,8 +28,8 @@ export class RoomAccessory implements AccessoryPlugin {
     config: RoomDeviceConfig,
   ) {
     this.name = config.name;
-    this.uuidBase = platform.uuid.generate(`${PLUGIN_NAME}-${this.name}-${config.listenCurrentTemperature}`);
-    this.displayName = this.uuidBase;
+    this.uuid_base = platform.uuid.generate(`${LEGACY_PLUGIN_NAME}-${this.name}-${config.listenCurrentTemperature}`);
+    this.displayName = this.uuid_base;
 
     this.informationService = new platform.Service.AccessoryInformation()
       .setCharacteristic(platform.Characteristic.Name, this.name)

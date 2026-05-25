@@ -1,13 +1,11 @@
 import type { Logger, PlatformConfig } from 'homebridge';
-import { isIP } from 'node:net';
+import { isIPv4 } from 'node:net';
 
 export const DEFAULT_KNX_IP = '224.0.23.12';
 export const DEFAULT_KNX_PORT = 3671;
 
 const GROUP_ADDRESS_PATTERN = /^(?:[0-9]|[12][0-9]|3[01])\/(?:[0-7])\/(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/;
-const HOSTNAME_LABEL_PATTERN = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$/;
 const INTEGER_STRING_PATTERN = /^[0-9]+$/;
-const IPV4_ADDRESS_LIKE_PATTERN = /^[0-9]+(?:\.[0-9]+)+$/;
 
 export interface RoomDeviceConfig {
   name: string;
@@ -36,7 +34,7 @@ export function parsePlatformConfig(config: PlatformConfig, log: Logger): RoomPl
 function parseIp(value: unknown, log: Logger): string {
   if (typeof value === 'string') {
     const host = value.trim();
-    if (isValidHost(host)) {
+    if (isValidIpAddress(host)) {
       return host;
     }
   }
@@ -102,21 +100,8 @@ function parseDevice(entry: unknown, index: number, log: Logger): RoomDeviceConf
   return [{ name, listenCurrentTemperature }];
 }
 
-function isValidHost(value: string): boolean {
-  if (value.length === 0 || value.length > 253) {
-    return false;
-  }
-
-  if (isIP(value) !== 0) {
-    return true;
-  }
-
-  if (IPV4_ADDRESS_LIKE_PATTERN.test(value)) {
-    return false;
-  }
-
-  const labels = value.endsWith('.') ? value.slice(0, -1).split('.') : value.split('.');
-  return labels.every((label) => HOSTNAME_LABEL_PATTERN.test(label));
+function isValidIpAddress(value: string): boolean {
+  return isIPv4(value);
 }
 
 function isRawRoomDeviceConfig(value: unknown): value is RawRoomDeviceConfig {

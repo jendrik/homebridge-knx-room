@@ -9,6 +9,7 @@ import type {
   uuid,
 } from 'homebridge';
 import { Connection } from 'knx';
+import { isIPv4 } from 'node:net';
 
 import { RoomAccessory } from './accessory.js';
 import { HistoryFactory } from './history.js';
@@ -83,8 +84,22 @@ export class RoomPlatform implements StaticPlatformPlugin {
       }
     }
 
+    if (isKnxRoutingAddress(this.roomConfig.ip)) {
+      this.log.info('Skipping KNX disconnect for routing connection.');
+      return;
+    }
+
     this.connection.Disconnect(() => {
       this.log.info('KNX disconnect completed.');
     });
   }
+}
+
+function isKnxRoutingAddress(ipAddress: string): boolean {
+  if (!isIPv4(ipAddress)) {
+    return false;
+  }
+
+  const firstOctet = Number.parseInt(ipAddress.split('.')[0] ?? '', 10);
+  return firstOctet >= 224 && firstOctet <= 239;
 }
