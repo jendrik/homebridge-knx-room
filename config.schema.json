@@ -3,37 +3,46 @@
   "pluginType": "platform",
   "singular": true,
   "schema": {
-    "ip": {
-      "title": "KNX Router or Interface",
-      "type": "string",
-      "placeholder": "224.0.23.12",
-      "description": "IP of the KNX Router."
-    },
-    "port": {
-      "title": "KNX Port",
-      "type": "string",
-      "placeholder": "3671",
-      "description": "KNX Port"
-    },
-    "devices": {
-      "type": "array",
-      "items": {
+    "type": "object",
+    "properties": {
+      "ip": {
+        "title": "KNX Router or Interface",
+        "type": "string",
+        "placeholder": "224.0.23.12",
+        "description": "IP address of the KNX router or interface."
+      },
+      "port": {
+        "title": "KNX Port",
+        "type": "number",
+        "default": 3671,
+        "minimum": 1,
+        "maximum": 65535,
+        "description": "KNX UDP port."
+      },
+      "devices": {
         "title": "Room Monitors",
-        "type": "object",
-        "properties": {
-          "name": {
-            "title": "Name",
-            "type": "string",
-            "required": true,
-            "placeholder": "Display Name for Room Monitor"
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "title": "Name",
+              "type": "string",
+              "required": true,
+              "placeholder": "Display Name for Room Monitor"
+            },
+            "listen_current_temperature": {
+              "title": "Listen Current Temperature Address",
+              "type": "string",
+              "required": true,
+              "placeholder": "1/1/1",
+              "pattern": "^[0-9]{1,4}/[0-9]{1,4}/[0-9]{1,4}$"
+            }
           },
-          "listen_current_temperature": {
-            "title": "Listen Current Temperature Address",
-            "type": "string",
-            "required": true,
-            "placeholder": "1/1/1",
-            "pattern": "^[0-9]{1,4}/[0-9]{1,4}/[0-9]{1,4}$"
-          }
+          "required": [
+            "name",
+            "listen_current_temperature"
+          ]
         }
       }
     }
@@ -43,7 +52,7 @@
       "key": "devices",
       "type": "array",
       "orderable": false,
-      "buttonText": "Add Thermostat",
+      "buttonText": "Add Room Monitor",
       "items": [
         "devices[].name",
         "devices[].listen_current_temperature"
