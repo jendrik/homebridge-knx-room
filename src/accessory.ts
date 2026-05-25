@@ -51,9 +51,7 @@ export class RoomAccessory implements AccessoryPlugin {
       this.handleTemperatureChange(newValue);
     });
 
-    this.currentTemperatureDatapoint.read((_src: unknown, value: KnxValue) => {
-      this.handleTemperatureChange(value);
-    });
+    this.currentTemperatureDatapoint.read();
 
     this.historyInterval = setInterval(() => {
       this.addPeriodicHistoryEntry();
