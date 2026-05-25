@@ -8,7 +8,9 @@ type FakeGatoFactory = new (
   accessoryType: string,
   accessory: { displayName: string },
   options: { storage: 'fs'; log: Logger; disableTimer: boolean }
-) => Service & {
+) => FakeGatoHistoryService;
+
+type FakeGatoHistoryService = Service & {
   _addEntry(entry: TemperatureHistoryEntry): void;
 };
 
@@ -36,10 +38,16 @@ export class HistoryFactory {
 }
 
 export class TemperatureHistory {
-  constructor(public readonly service: Service & { _addEntry(entry: TemperatureHistoryEntry): void }) {}
+  public readonly service: Service;
+  private readonly historyService: FakeGatoHistoryService;
+
+  constructor(service: FakeGatoHistoryService) {
+    this.service = service;
+    this.historyService = service;
+  }
 
   addTemperature(temperature: number): void {
-    this.service._addEntry({
+    this.historyService._addEntry({
       time: Math.round(Date.now() / 1000),
       temp: temperature,
     });
