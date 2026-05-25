@@ -14,15 +14,6 @@ import { RoomAccessory } from './accessory.js';
 import { HistoryFactory } from './history.js';
 import { parsePlatformConfig, type RoomPlatformConfig } from './config.js';
 
-type ManagedRoomAccessory = RoomAccessory & {
-  shutdown(): void;
-};
-
-type ManagedRoomAccessoryConstructor = new (
-  platform: RoomPlatform,
-  config: RoomPlatformConfig['devices'][number],
-) => ManagedRoomAccessory;
-
 export class RoomPlatform implements StaticPlatformPlugin {
   public readonly Service: typeof Service;
   public readonly Characteristic: typeof Characteristic;
@@ -31,7 +22,7 @@ export class RoomPlatform implements StaticPlatformPlugin {
   public readonly connection: Connection;
 
   private readonly roomConfig: RoomPlatformConfig;
-  private readonly devices: ManagedRoomAccessory[] = [];
+  private readonly devices: RoomAccessory[] = [];
   private hasShutdown = false;
 
   constructor(
@@ -46,8 +37,7 @@ export class RoomPlatform implements StaticPlatformPlugin {
     this.historyFactory = new HistoryFactory(api);
     this.connection = this.createConnection();
 
-    const RoomAccessoryWithLifecycle = RoomAccessory as unknown as ManagedRoomAccessoryConstructor;
-    this.devices = this.roomConfig.devices.map((device) => new RoomAccessoryWithLifecycle(this, device));
+    this.devices = this.roomConfig.devices.map((device) => new RoomAccessory(this, device));
 
     api.on('shutdown', () => {
       this.shutdown();
