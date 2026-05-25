@@ -1,37 +1,38 @@
-import { AccessoryConfig, AccessoryPlugin, Service } from 'homebridge';
-
+import type { AccessoryPlugin, Service } from 'homebridge';
 import { Datapoint } from 'knx';
-import fakegato from 'fakegato-history';
 
-import { PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_DISPLAY_NAME } from './settings';
+import { PLUGIN_DISPLAY_NAME, PLUGIN_VERSION } from './settings.js';
+import type { RoomDeviceConfig } from './config.js';
+import type { TemperatureHistory } from './history.js';
+import type { RoomPlatform } from './platform.js';
 
-import { RoomPlatform } from './platform';
-
+type KnxValue = number | string | boolean | Date;
+const LEGACY_PLUGIN_NAME = 'homebridge-knx-room';
 
 export class RoomAccessory implements AccessoryPlugin {
-  private readonly uuid_base: string;
   private readonly name: string;
-  private readonly displayName: string;
-
-  private readonly listen_current_temperature: string;
+  public readonly uuid_base: string;
+  public readonly displayName: string;
 
   private readonly temperatureSensorService: Service;
-  private readonly loggingService: fakegato;
+  private readonly loggingService: TemperatureHistory;
   private readonly informationService: Service;
+  private readonly currentTemperatureDatapoint: Datapoint;
+  private readonly historyInterval: NodeJS.Timeout;
+
+  private currentTemperature: number | undefined;
+  private isShutdown = false;
 
   constructor(
     private readonly platform: RoomPlatform,
-    private readonly config: AccessoryConfig,
+    config: RoomDeviceConfig,
   ) {
-
     this.name = config.name;
-    this.listen_current_temperature = config.listen_current_temperature;
-    this.uuid_base = platform.uuid.generate(PLUGIN_NAME + '-' + this.name + '-' + this.listen_current_temperature);
+    this.uuid_base = platform.uuid.generate(`${LEGACY_PLUGIN_NAME}-${this.name}-${config.listenCurrentTemperature}`);
     this.displayName = this.uuid_base;
 
     this.informationService = new platform.Service.AccessoryInformation()
       .setCharacteristic(platform.Characteristic.Name, this.name)
-      .setCharacteristic(platform.Characteristic.Identify, this.name)
       .setCharacteristic(platform.Characteristic.Manufacturer, '@jendrik')
       .setCharacteristic(platform.Characteristic.Model, PLUGIN_DISPLAY_NAME)
       .setCharacteristic(platform.Characteristic.SerialNumber, this.displayName)
@@ -40,26 +41,62 @@ export class RoomAccessory implements AccessoryPlugin {
     this.temperatureSensorService = new platform.Service.TemperatureSensor(this.name);
     this.temperatureSensorService.getCharacteristic(platform.Characteristic.StatusActive).updateValue(true);
 
-    this.loggingService = new platform.fakeGatoHistoryService('room', this, { storage: 'fs', log: platform.log });
+    this.loggingService = platform.historyFactory.createRoomHistory(this, platform.log);
 
-    const dp_listen_current_temperature = new Datapoint({
-      ga: this.listen_current_temperature,
+    this.currentTemperatureDatapoint = new Datapoint({
+      ga: config.listenCurrentTemperature,
       dpt: 'DPT9.001',
       autoread: true,
     }, platform.connection);
 
-    dp_listen_current_temperature.on('change', (oldValue: number, newValue: number) => {
-      const current_temperature = newValue;
-      this.temperatureSensorService.getCharacteristic(platform.Characteristic.CurrentTemperature).updateValue(current_temperature);
-      this.loggingService._addEntry({ time: Math.round(new Date().valueOf() / 1000), temp: current_temperature });
+    this.currentTemperatureDatapoint.on('change', (_oldValue: KnxValue, newValue: KnxValue) => {
+      this.handleTemperatureChange(newValue);
     });
+
+    this.historyInterval = setInterval(() => {
+      this.addPeriodicHistoryEntry();
+    }, 10 * 60 * 1000);
   }
 
   getServices(): Service[] {
     return [
       this.informationService,
       this.temperatureSensorService,
-      this.loggingService,
+      this.loggingService.service,
     ];
+  }
+
+  shutdown(): void {
+    this.isShutdown = true;
+    clearInterval(this.historyInterval);
+    this.currentTemperatureDatapoint.removeAllListeners('change');
+  }
+
+  private handleTemperatureChange(value: KnxValue): void {
+    if (this.isShutdown) {
+      return;
+    }
+
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      this.platform.log.warn(`Ignoring invalid KNX temperature for ${this.name}: ${String(value)}`);
+      return;
+    }
+
+    this.currentTemperature = value;
+    this.temperatureSensorService.getCharacteristic(this.platform.Characteristic.CurrentTemperature).updateValue(value);
+    this.loggingService.addTemperature(value);
+  }
+
+  private addPeriodicHistoryEntry(): void {
+    if (this.isShutdown) {
+      return;
+    }
+
+    if (this.currentTemperature === undefined) {
+      this.platform.log.debug(`Skipping periodic history entry for ${this.name}: no KNX temperature received yet.`);
+      return;
+    }
+
+    this.loggingService.addTemperature(this.currentTemperature);
   }
 }

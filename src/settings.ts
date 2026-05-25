@@ -1,14 +1,17 @@
-/* eslint @typescript-eslint/no-var-requires: "off" */
-const { displayName, version } = require('../package.json');
+import { createRequire } from 'node:module';
 
-/**
- * This is the name of the platform that users will use to register the plugin in the Homebridge config.json
- */
+interface PackageMetadata {
+  name: string;
+  displayName: string;
+  version: string;
+}
+
+const require = createRequire(import.meta.url);
+const packageMetadata = require('../package.json') as PackageMetadata;
+
+// Homebridge config.json platform alias.
 export const PLATFORM_NAME = 'knx-room';
-
-/**
- * This must match the name of your plugin as defined the package.json
- */
-export const PLUGIN_NAME = 'homebridge-' + PLATFORM_NAME;
-export const PLUGIN_DISPLAY_NAME = displayName;
-export const PLUGIN_VERSION = version;
+// Homebridge 2 registration package identifier; must match package.json name.
+export const PLUGIN_NAME = packageMetadata.name;
+export const PLUGIN_DISPLAY_NAME = packageMetadata.displayName;
+export const PLUGIN_VERSION = packageMetadata.version;

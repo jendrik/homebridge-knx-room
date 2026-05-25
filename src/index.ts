@@ -1,11 +1,8 @@
-import { API } from 'homebridge';
+import type { API } from 'homebridge';
 
-import { RoomPlatform } from './platform';
-import { PLATFORM_NAME } from './settings';
+import { RoomPlatform } from './platform.js';
+import { PLATFORM_NAME, PLUGIN_NAME } from './settings.js';
 
-/**
- * This method registers the platform with Homebridge
- */
-export = (api: API) => {
-  api.registerPlatform(PLATFORM_NAME, RoomPlatform);
+export default (api: API): void => {
+  api.registerPlatform(PLUGIN_NAME, PLATFORM_NAME, RoomPlatform);
 };
