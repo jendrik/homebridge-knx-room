@@ -20,10 +20,11 @@ export class RoomAccessory implements AccessoryPlugin {
   private readonly historyInterval: NodeJS.Timeout;
 
   private currentTemperature: number | undefined;
+  private isShutdown = false;
 
   constructor(
     private readonly platform: RoomPlatform,
-    private readonly config: RoomDeviceConfig,
+    config: RoomDeviceConfig,
   ) {
     this.name = config.name;
     this.uuidBase = platform.uuid.generate(`${PLUGIN_NAME}-${this.name}-${config.listenCurrentTemperature}`);
@@ -51,8 +52,6 @@ export class RoomAccessory implements AccessoryPlugin {
       this.handleTemperatureChange(newValue);
     });
 
-    this.currentTemperatureDatapoint.read();
-
     this.historyInterval = setInterval(() => {
       this.addPeriodicHistoryEntry();
     }, 10 * 60 * 1000);
@@ -67,11 +66,16 @@ export class RoomAccessory implements AccessoryPlugin {
   }
 
   shutdown(): void {
+    this.isShutdown = true;
     clearInterval(this.historyInterval);
     this.currentTemperatureDatapoint.removeAllListeners('change');
   }
 
   private handleTemperatureChange(value: KnxValue): void {
+    if (this.isShutdown) {
+      return;
+    }
+
     if (typeof value !== 'number' || !Number.isFinite(value)) {
       this.platform.log.warn(`Ignoring invalid KNX temperature for ${this.name}: ${String(value)}`);
       return;
@@ -83,6 +87,10 @@ export class RoomAccessory implements AccessoryPlugin {
   }
 
   private addPeriodicHistoryEntry(): void {
+    if (this.isShutdown) {
+      return;
+    }
+
     if (this.currentTemperature === undefined) {
       this.platform.log.debug(`Skipping periodic history entry for ${this.name}: no KNX temperature received yet.`);
       return;
