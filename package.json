@@ -38,11 +38,11 @@
     "knx"
   ],
   "devDependencies": {
-    "@eslint/js": "^9.39.4",
+    "@eslint/js": "^8.57.1",
     "@types/node": "^22.15.0",
     "@typescript-eslint/eslint-plugin": "^8.59.4",
     "@typescript-eslint/parser": "^8.59.4",
-    "eslint": "^9.39.4",
+    "eslint": "^8.57.1",
     "homebridge": "^2.0.2",
     "nodemon": "^3.1.14",
     "rimraf": "^6.1.3",
@@ -53,5 +53,10 @@
   "dependencies": {
     "fakegato-history": "^0.6.7",
     "knx": "^2.5.4"
+  },
+  "overrides": {
+    "@typescript-eslint/visitor-keys": {
+      "eslint-visitor-keys": "^4.2.1"
+    }
   }
 }
