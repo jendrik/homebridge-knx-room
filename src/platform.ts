@@ -1,55 +1,89 @@
-import { API, StaticPlatformPlugin, Logger, PlatformConfig, AccessoryPlugin, Service, Characteristic, uuid } from 'homebridge';
-
-import fakegato from 'fakegato-history';
-
+import type {
+  API,
+  AccessoryPlugin,
+  Characteristic,
+  Logger,
+  PlatformConfig,
+  Service,
+  StaticPlatformPlugin,
+  uuid,
+} from 'homebridge';
 import { Connection } from 'knx';
 
-import { RoomAccessory } from './accessory';
+import { RoomAccessory } from './accessory.js';
+import { HistoryFactory } from './history.js';
+import { parsePlatformConfig, type RoomPlatformConfig } from './config.js';
 
+type ManagedRoomAccessory = RoomAccessory & {
+  shutdown(): void;
+};
+
+type ManagedRoomAccessoryConstructor = new (
+  platform: RoomPlatform,
+  config: RoomPlatformConfig['devices'][number],
+) => ManagedRoomAccessory;
 
 export class RoomPlatform implements StaticPlatformPlugin {
-  public readonly Service: typeof Service = this.api.hap.Service;
-  public readonly Characteristic: typeof Characteristic = this.api.hap.Characteristic;
-  public readonly uuid: typeof uuid = this.api.hap.uuid;
-
-  public readonly fakeGatoHistoryService;
-
+  public readonly Service: typeof Service;
+  public readonly Characteristic: typeof Characteristic;
+  public readonly uuid: typeof uuid;
+  public readonly historyFactory: HistoryFactory;
   public readonly connection: Connection;
 
-  private readonly devices: RoomAccessory[] = [];
+  private readonly roomConfig: RoomPlatformConfig;
+  private readonly devices: ManagedRoomAccessory[] = [];
 
   constructor(
     public readonly log: Logger,
-    public readonly config: PlatformConfig,
+    config: PlatformConfig,
     public readonly api: API,
   ) {
-    this.fakeGatoHistoryService = fakegato(this.api);
+    this.Service = api.hap.Service;
+    this.Characteristic = api.hap.Characteristic;
+    this.uuid = api.hap.uuid;
+    this.roomConfig = parsePlatformConfig(config, log);
+    this.historyFactory = new HistoryFactory(api);
+    this.connection = this.createConnection();
 
-    // connect
-    this.connection = new Connection({
-      ipAddr: config.ip ?? '224.0.23.12',
-      ipPort: config.port ?? 3671,
-      handlers: {
-        connected: function () {
-          log.info('KNX connected');
-        },
-        error: function (connstatus: unknown) {
-          log.error(`KNX status: ${connstatus}`);
-        },
-      },
+    const RoomAccessoryWithLifecycle = RoomAccessory as unknown as ManagedRoomAccessoryConstructor;
+    this.devices = this.roomConfig.devices.map((device) => new RoomAccessoryWithLifecycle(this, device));
+
+    api.on('shutdown', () => {
+      this.shutdown();
     });
 
-    // read devices
-    config.devices.forEach(element => {
-      if (element.name !== undefined && element.listen_current_temperature) {
-        this.devices.push(new RoomAccessory(this, element));
-      }
-    });
-
-    log.info('finished initializing!');
+    log.info(`Initialized ${this.devices.length} KNX room monitor accessory/accessories.`);
   }
 
   accessories(callback: (foundAccessories: AccessoryPlugin[]) => void): void {
     callback(this.devices);
+  }
+
+  private createConnection(): Connection {
+    return new Connection({
+      ipAddr: this.roomConfig.ip,
+      ipPort: this.roomConfig.port,
+      handlers: {
+        connected: () => {
+          this.log.info('KNX connected.');
+        },
+        disconnected: () => {
+          this.log.info('KNX disconnected.');
+        },
+        error: (connstatus: unknown) => {
+          this.log.error(`KNX connection error: ${String(connstatus)}`);
+        },
+      },
+    });
+  }
+
+  private shutdown(): void {
+    for (const device of this.devices) {
+      device.shutdown();
+    }
+
+    this.connection.Disconnect(() => {
+      this.log.info('KNX disconnect requested.');
+    });
   }
 }
