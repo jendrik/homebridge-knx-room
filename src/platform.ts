@@ -32,6 +32,7 @@ export class RoomPlatform implements StaticPlatformPlugin {
 
   private readonly roomConfig: RoomPlatformConfig;
   private readonly devices: ManagedRoomAccessory[] = [];
+  private hasShutdown = false;
 
   constructor(
     public readonly log: Logger,
@@ -78,12 +79,22 @@ export class RoomPlatform implements StaticPlatformPlugin {
   }
 
   private shutdown(): void {
-    for (const device of this.devices) {
-      device.shutdown();
+    if (this.hasShutdown) {
+      return;
+    }
+
+    this.hasShutdown = true;
+
+    for (const [index, device] of this.devices.entries()) {
+      try {
+        device.shutdown();
+      } catch (error) {
+        this.log.error(`Failed to shut down KNX room accessory at index ${index}: ${String(error)}`);
+      }
     }
 
     this.connection.Disconnect(() => {
-      this.log.info('KNX disconnect requested.');
+      this.log.info('KNX disconnect completed.');
     });
   }
 }
