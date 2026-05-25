@@ -4,7 +4,7 @@ import { isIP } from 'node:net';
 export const DEFAULT_KNX_IP = '224.0.23.12';
 export const DEFAULT_KNX_PORT = 3671;
 
-const GROUP_ADDRESS_PATTERN = /^[0-9]{1,4}\/[0-9]{1,4}\/[0-9]{1,4}$/;
+const GROUP_ADDRESS_PATTERN = /^(?:[0-9]|[12][0-9]|3[01])\/(?:[0-7])\/(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/;
 const HOSTNAME_LABEL_PATTERN = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$/;
 const INTEGER_STRING_PATTERN = /^[0-9]+$/;
 const IPV4_ADDRESS_LIKE_PATTERN = /^[0-9]+(?:\.[0-9]+)+$/;
