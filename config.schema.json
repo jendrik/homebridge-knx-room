@@ -9,12 +9,13 @@
         "title": "KNX Router or Interface",
         "type": "string",
         "default": "224.0.23.12",
+        "minLength": 1,
         "placeholder": "224.0.23.12",
         "description": "Host or IP address of the KNX router or interface."
       },
       "port": {
         "title": "KNX Port",
-        "type": "number",
+        "type": "integer",
         "default": 3671,
         "minimum": 1,
         "maximum": 65535,
@@ -30,6 +31,8 @@
             "name": {
               "title": "Name",
               "type": "string",
+              "minLength": 1,
+              "pattern": ".*\\S.*",
               "placeholder": "Display Name for Room Monitor"
             },
             "listen_current_temperature": {
