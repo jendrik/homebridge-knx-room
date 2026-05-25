@@ -12,13 +12,17 @@ Homebridge 2 platform plugin for KNX room temperature monitors.
 
 ```json
 {
-  "platform": "knx-room",
-  "ip": "224.0.23.12",
-  "port": 3671,
-  "devices": [
+  "platforms": [
     {
-      "name": "Living Room",
-      "listen_current_temperature": "1/1/1"
+      "platform": "knx-room",
+      "ip": "224.0.23.12",
+      "port": 3671,
+      "devices": [
+        {
+          "name": "Living Room",
+          "listen_current_temperature": "1/1/1"
+        }
+      ]
     }
   ]
 }
